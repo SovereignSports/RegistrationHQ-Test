@@ -31,9 +31,20 @@
 .uw-director-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}.uw-director-heading h2{margin:0;font-size:21px}.uw-director-heading p{margin:3px 0 0;font-size:13px;color:#607083}.uw-director-heading a{text-decoration:none;font-size:13px}.uw-director-actions{display:flex;gap:9px;flex-wrap:wrap;margin:17px 0}.uw-director-actions button{min-height:42px}#uw-ledger{display:grid;gap:8px;margin-top:10px}#uw-ledger .uw-ledger-row{padding:11px 13px;border:1px solid #dce3eb;border-radius:9px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}#uw-ledger time{color:#64748b;font-size:12px}#uw-ledger .uw-ledger-label{font-weight:650}.uw-admin-advanced{margin-top:17px;border-top:1px solid #dce3eb;padding-top:15px}.uw-admin-advanced summary{cursor:pointer;font-weight:700;color:#324b60}.uw-admin-advanced>label,.uw-admin-new>label{display:grid;gap:5px;margin-top:12px;font-size:13px;font-weight:650}.uw-admin-advanced :is(input,select,textarea){width:100%;border:1px solid #bdcbd8;border-radius:8px;padding:10px;font:inherit}.uw-admin-new{border:1px solid #dce3eb;border-radius:9px;margin:15px 0;padding:12px}.uw-admin-note{font-size:12px;color:#607083}#uw-director-status:empty{display:none}#uw-dir[hidden]{display:none!important}
 </style><style id="r244-restore-style">.approved-public-heading{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;width:100%;color:#172e47;padding:8px 0}.approved-public-heading span{font-size:12px;color:#617489}#live-catalog{max-width:100%}#approved-public-frame{max-width:100%}#connected-registration-tests summary:focus-visible{outline:2px solid #b58d49;outline-offset:4px}</style><style id="rhq-director-clean-nav">
 /* Director Hub clarity pass — presentation only; existing RPCs and auth retained. */
-#rhq-director-nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 14px;align-items:center}
-#rhq-director-nav button{border:1px solid #d0dbe5;background:white;border-radius:10px;padding:11px 14px;color:#28435c;font-weight:700;cursor:pointer;min-height:43px}
-#rhq-director-nav button[aria-selected="true"]{background:#163451;color:white;border-color:#163451}
+#rhq-director-nav{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:13px;margin:18px 0 22px;align-items:stretch}
+#rhq-director-nav .rhq-task-card{display:flex;min-height:136px;gap:13px;align-items:flex-start;text-align:left;white-space:normal;flex-direction:column;justify-content:space-between}
+#rhq-director-nav .rhq-task-title{display:block;font-size:18px;line-height:1.25;color:#173650}
+#rhq-director-nav .rhq-task-blurb{display:block;font-weight:450;font-size:13px;line-height:1.5;color:#5d7082;margin-top:9px}
+#rhq-director-nav .rhq-task-action{font-size:12px;color:#284e72;font-weight:800}
+#rhq-director-home h2{margin:5px 0;font-size:25px;color:#172e47}
+#rhq-director-home p{margin:0;color:#607083;font-size:14px}
+#rhq-director-back{margin:15px 0 13px;background:#fff;border:1px solid #cbd8e4;border-radius:9px;padding:10px 14px;font-weight:750;color:#203e5b;cursor:pointer}
+body.rhq-director-pane-home main.shell > :is(.notice,#uw-dir,#dev-director,.layout,.strip,#live-catalog,#module-frame,footer,#rhq-registration-entry){display:none!important}
+body.rhq-director-pane-home #rhq-director-access{display:block!important}
+body:not(.rhq-director-pane-home) #rhq-director-home,body:not(.rhq-director-pane-home) #rhq-director-nav{display:none!important}
+body.rhq-director-pane-home #rhq-director-back{display:none!important}
+#rhq-director-nav button{border:1px solid #d0dbe5;background:white;border-radius:13px;padding:19px;color:#28435c;font-weight:700;cursor:pointer;min-height:43px;box-shadow:0 3px 12px #172e470a}#rhq-director-nav button:hover{border-color:#8aacc9;box-shadow:0 6px 22px #172e471a}#rhq-director-nav button:focus-visible{outline:3px solid #c99b53;outline-offset:3px}
+
 #rhq-registration-entry{border:1px solid #d8e1ea;background:white;border-radius:14px;padding:21px;margin:0 0 14px}
 #rhq-registration-entry h2{margin:0 0 7px;font-size:21px}#rhq-registration-entry p{color:#5b6d80;margin:0 0 13px;font-size:14px}
 #rhq-registration-entry button{min-height:43px}
@@ -42,7 +53,7 @@ body.rhq-director-pane-registrations main.shell > :is(.notice,#uw-dir,#dev-direc
 body.rhq-director-pane-registrations:not(.rhq-registration-open) #module-frame{display:none!important}
 body.rhq-director-pane-tools main.shell > :is(#uw-dir,#rhq-registration-entry){display:none!important}
 body.uw-standalone #rhq-director-nav,body.uw-standalone #rhq-registration-entry{display:none!important}
-@media(max-width:640px){#rhq-director-nav button{flex:1 1 auto}#rhq-registration-entry{padding:15px}}
+@media(max-width:640px){#rhq-director-nav{grid-template-columns:1fr}#rhq-director-nav .rhq-task-card{min-height:112px}#rhq-registration-entry{padding:15px}}
 </style></head><body>
 <header class="top" id="rhq-site-header"><div><div class="eyebrow">SOVEREIGN SPORTS</div><h1>Registration HQ</h1><p>Director workspace · Registration features in development</p></div><div class="pill">REGISTRATION DEVELOPMENT</div></header>
 <script id="rhq-public-route-branding">
@@ -1149,15 +1160,30 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
  const shell=document.querySelector('main.shell');
  const anchor=document.querySelector('#uw-dir');
  if(!shell||!anchor)return;
- const navigation=document.createElement('nav');navigation.id='rhq-director-nav';navigation.setAttribute('aria-label','Registration HQ director sections');
- const options=[['waivers','Waivers & Releases'],['registrations','Registrations'],['tools','Development Tools']];
+ const home=document.createElement('section');home.id='rhq-director-home';
+ const heading=document.createElement('h2');heading.textContent='What would you like to manage?';
+ const intro=document.createElement('p');intro.textContent='Choose a task to open its workspace. Your director sign-in applies across all authorized sections.';
+ home.append(heading,intro);
+ const navigation=document.createElement('nav');navigation.id='rhq-director-nav';navigation.setAttribute('aria-label','Director tasks');
+ const options=[
+  ['waivers','Waivers & Releases','Review signed agreements, check waiver status, and manage annual releases.','Open waiver management'],
+  ['registrations','Registrations','Manage synchronized seasons, tournaments, offerings, and participant intake.','Open registration management'],
+  ['tools','Development Tools','Access previews, connected tests, and configuration used during development.','Open development tools']
+ ];
  const buttons=[];
- for(const [key,title] of options){
-   const button=document.createElement('button');button.type='button';button.textContent=title;
-   button.dataset.section=key;button.setAttribute('aria-selected','false');
+ for(const [key,title,description,action] of options){
+   const button=document.createElement('button');button.type='button';button.className='rhq-task-card';
+   button.innerHTML='<span><strong class="rhq-task-title"></strong><small class="rhq-task-blurb"></small></span><span class="rhq-task-action"></span>';
+   button.querySelector('.rhq-task-title').textContent=title;
+   button.querySelector('.rhq-task-blurb').textContent=description;
+   button.querySelector('.rhq-task-action').textContent=action+' →';
+   button.dataset.section=key;
    navigation.append(button);buttons.push(button);
  }
- anchor.before(navigation);
+ home.append(navigation);
+ anchor.before(home);
+ const back=document.createElement('button');back.type='button';back.id='rhq-director-back';back.textContent='← Back to Director Home';
+ anchor.before(back);
  const card=document.createElement('section');card.id='rhq-registration-entry';
  const title=document.createElement('h2');title.textContent='Registrations';
  const info=document.createElement('p');info.textContent="League and tournament seasons load automatically when you are signed in.";
@@ -1167,8 +1193,8 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
  // One shared sign-in for waivers and synchronized registration operations.
  const access=document.createElement('section');access.id='rhq-director-access';
  access.style.cssText='background:#f7f9fc;border:1px solid #dce3eb;border-radius:12px;padding:13px 15px;margin:14px 0';
- access.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>Director access</strong><span id="rhq-access-state" role="status" style="font-size:13px;color:#53677b">Checking sign-in…</span></div><div id="rhq-access-login" hidden style="margin-top:10px"><label style="display:block;font-size:13px;margin-bottom:8px">Director email <input type="email" id="rhq-access-email" autocomplete="email" placeholder="Your authorized email" style="width:100%;max-width:360px;padding:10px;border:1px solid #bdcbd8;border-radius:8px;display:block;margin-top:4px"></label><button type="button" id="rhq-access-link" class="btn">Email me a sign-in link</button><p style="font-size:12px;color:#53677b;margin:9px 0 0">You'll only need a link when your saved session has expired. Director permissions are still checked by Supabase.</p></div><button type="button" id="rhq-access-out" class="secondary" style="margin-top:8px;display:none">Sign out</button>`;
- navigation.after(access);
+ access.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>Director access</strong><span id="rhq-access-state" role="status" style="font-size:13px;color:#53677b">Checking sign-in…</span></div><form id="rhq-access-login" hidden style="margin-top:10px"><label style="display:block;font-size:13px;margin-bottom:8px">Director email <input type="email" id="rhq-access-email" autocomplete="username" required placeholder="Your authorized email" style="width:100%;max-width:360px;padding:10px;border:1px solid #bdcbd8;border-radius:8px;display:block;margin-top:4px"></label><label style="display:block;font-size:13px;margin-bottom:8px">Password <input type="password" id="rhq-access-password" autocomplete="current-password" required minlength="8" style="width:100%;max-width:360px;padding:10px;border:1px solid #bdcbd8;border-radius:8px;display:block;margin-top:4px"></label><button type="submit" id="rhq-access-signin" class="btn">Sign in</button><p style="font-size:12px;color:#53677b;margin:9px 0 0">Sign in here without leaving this browser. Your authorized session is remembered securely by Supabase.</p></form><div id="rhq-password-setup" hidden style="margin-top:12px"><details><summary style="cursor:pointer;font-size:13px">Set or change my director password</summary><form id="rhq-password-form" style="margin-top:10px"><label style="display:block;font-size:13px;margin-bottom:8px">New password <input type="password" id="rhq-password-new" autocomplete="new-password" required minlength="12" style="width:100%;max-width:360px;padding:10px;border:1px solid #bdcbd8;border-radius:8px;display:block;margin-top:4px"></label><label style="display:block;font-size:13px;margin-bottom:8px">Confirm new password <input type="password" id="rhq-password-confirm" autocomplete="new-password" required minlength="12" style="width:100%;max-width:360px;padding:10px;border:1px solid #bdcbd8;border-radius:8px;display:block;margin-top:4px"></label><button class="btn" type="submit" id="rhq-password-save">Save password</button><p style="font-size:12px;color:#53677b;margin:9px 0 0">Only available while signed in. Supabase may require reauthentication depending on your project settings.</p></form></details></div><button type="button" id="rhq-access-out" class="secondary" style="margin-top:8px;display:none">Sign out</button>`;
+ home.before(access);
  const authClient=()=>window.RHQ_AUTH.client(window.RHQ_AUTH.publicKey());
  let authChecking=false;
  async function refreshDirectorAccess(){
@@ -1181,19 +1207,43 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
      state.textContent=user?'Signed in: '+(user.email||'Authorized account'):'Not signed in';
      access.querySelector('#rhq-access-login').hidden=!!user;
      access.querySelector('#rhq-access-out').style.display=user?'inline-block':'none';
-   }catch(_){state.textContent='Sign in to manage private records';access.querySelector('#rhq-access-login').hidden=false;access.querySelector('#rhq-access-out').style.display='none';}
+     access.querySelector('#rhq-password-setup').hidden=!user;
+   }catch(_){state.textContent='Sign in to manage private records';access.querySelector('#rhq-access-login').hidden=false;access.querySelector('#rhq-access-out').style.display='none';access.querySelector('#rhq-password-setup').hidden=true;}
    finally{authChecking=false;}
  }
- access.querySelector('#rhq-access-link').addEventListener('click',async()=>{
+ access.querySelector('#rhq-access-login').addEventListener('submit',async event=>{
+   event.preventDefault();
    const email=access.querySelector('#rhq-access-email').value.trim();
+   const password=access.querySelector('#rhq-access-password').value;
    const state=access.querySelector('#rhq-access-state');
-   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){state.textContent='Enter a valid director email.';return;}
-   const button=access.querySelector('#rhq-access-link');button.disabled=true;
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!password){state.textContent='Enter a valid email and password.';return;}
+   const button=access.querySelector('#rhq-access-signin');button.disabled=true;
    try{
-     const {error}=await authClient().auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+     const {data,error}=await authClient().auth.signInWithPassword({email,password});
      if(error)throw error;
-     state.textContent='Check your email for the sign-in link. Return here after opening it.';
-   }catch(error){state.textContent=error.message||'Could not send sign-in link.';}
+     if(!data?.session||!data?.user)throw Error('Sign-in did not establish a session.');
+     access.querySelector('#rhq-access-password').value='';
+     await refreshDirectorAccess();
+   }catch(error){state.textContent=error.message||'Sign-in failed.';}
+   finally{button.disabled=false;}
+ });
+ access.querySelector('#rhq-password-form').addEventListener('submit',async event=>{
+   event.preventDefault();
+   const next=access.querySelector('#rhq-password-new').value;
+   const confirm=access.querySelector('#rhq-password-confirm').value;
+   const state=access.querySelector('#rhq-access-state');
+   if(next.length<12){state.textContent='Use a password of at least 12 characters.';return;}
+   if(next!==confirm){state.textContent='The new passwords do not match.';return;}
+   const button=access.querySelector('#rhq-password-save');button.disabled=true;
+   try{
+     const {data:userData,error:userError}=await authClient().auth.getUser();
+     if(userError||!userData?.user)throw Error('Sign in before setting a password.');
+     const {error}=await authClient().auth.updateUser({password:next});
+     if(error)throw error;
+     access.querySelector('#rhq-password-new').value='';
+     access.querySelector('#rhq-password-confirm').value='';
+     state.textContent='Director password saved. You can now sign in here using your email and password.';
+   }catch(error){state.textContent=error.message||'Unable to set password.';}
    finally{button.disabled=false;}
  });
  access.querySelector('#rhq-access-out').addEventListener('click',async()=>{
@@ -1205,26 +1255,31 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
  });
  try{authClient().auth.onAuthStateChange(()=>{setTimeout(refreshDirectorAccess,0);});}catch(_){}
  refreshDirectorAccess();
- const allowed=new Set(options.map(x=>x[0]));
- const setPane=key=>{
-   if(!allowed.has(key))key='waivers';
-   document.body.classList.remove('rhq-director-pane-waivers','rhq-director-pane-registrations','rhq-director-pane-tools');
-   document.body.classList.add('rhq-director-pane-'+key);
-   buttons.forEach(b=>b.setAttribute('aria-selected',String(b.dataset.section===key)));
-   try{sessionStorage.setItem('rhq-director-pane-v1',key)}catch{}
- };
- buttons.forEach(b=>b.addEventListener('click',()=>setPane(b.dataset.section)));
- open.addEventListener('click',()=>{
+ const allowed=new Set(['home',...options.map(x=>x[0])]);
+ const launchRegistration=()=>{
    const restore=document.getElementById('dev-restore-connected');
    const frame=document.getElementById('module-frame');
    if(!restore||!frame){feedback.textContent='Connected director workspace is unavailable.';return;}
    document.body.classList.add('rhq-registration-open');
    restore.click();
    frame.style.display='block';
-   feedback.textContent='Synchronized sources will load from your existing director session.';
-   frame.scrollIntoView({block:'start',behavior:'smooth'});
- });
- let previous='waivers';try{previous=sessionStorage.getItem('rhq-director-pane-v1')||'waivers'}catch{}
+   feedback.textContent='Synchronized sources use your current authorized director session.';
+ };
+ const setPane=key=>{
+   if(!allowed.has(key))key='home';
+   document.body.classList.remove('rhq-director-pane-home','rhq-director-pane-waivers','rhq-director-pane-registrations','rhq-director-pane-tools');
+   document.body.classList.add('rhq-director-pane-'+key);
+   back.hidden=key==='home';
+   if(key==='registrations')launchRegistration();
+   if(key==='home')document.body.classList.remove('rhq-registration-open');
+   try{sessionStorage.setItem('rhq-director-pane-v2',key)}catch{}
+   window.scrollTo({top:0,behavior:'instant'});
+ };
+ buttons.forEach(b=>b.addEventListener('click',()=>setPane(b.dataset.section)));
+ back.addEventListener('click',()=>setPane('home'));
+ // Keep the existing open button for continuity, but the main card now launches directly.
+ open.addEventListener('click',()=>launchRegistration());
+ let previous='home';try{previous=sessionStorage.getItem('rhq-director-pane-v2')||'home'}catch{}
  setPane(previous);
 })();
 </script></body></html>
