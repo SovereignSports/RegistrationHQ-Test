@@ -54,6 +54,15 @@ body.rhq-director-pane-registrations:not(.rhq-registration-open) #module-frame{d
 body.rhq-director-pane-tools main.shell > :is(#uw-dir,#rhq-registration-entry){display:none!important}
 body.uw-standalone #rhq-director-nav,body.uw-standalone #rhq-registration-entry{display:none!important}
 @media(max-width:640px){#rhq-director-nav{grid-template-columns:1fr}#rhq-director-nav .rhq-task-card{min-height:112px}#rhq-registration-entry{padding:15px}}
+
+#rhq-advanced-entry{border:1px solid #dce3ea;border-radius:12px;background:#fff;margin:0 0 18px;padding:12px 16px}
+#rhq-advanced-entry summary{cursor:pointer;font-size:13px;font-weight:750;color:#435b72}
+#rhq-advanced-entry p{font-size:13px;color:#607083;margin:10px 0}
+#rhq-advanced-entry button{min-height:42px}
+body.rhq-director-pane-registrations #rhq-registration-entry{display:block!important;border:0;box-shadow:none;background:transparent;padding:0 0 12px;margin:0}
+body.rhq-director-pane-registrations #rhq-registration-entry h2{font-size:23px}
+body.rhq-director-pane-registrations #module-frame{border:0!important;border-radius:0!important;box-shadow:none!important;width:100%;max-width:100%;background:transparent}
+#rhq-registration-entry button[hidden]{display:none!important}
 </style></head><body>
 <header class="top" id="rhq-site-header"><div><div class="eyebrow">SOVEREIGN SPORTS</div><h1>Registration HQ</h1><p>Director workspace · Registration features in development</p></div><div class="pill">REGISTRATION DEVELOPMENT</div></header>
 <script id="rhq-public-route-branding">
@@ -1167,8 +1176,7 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
  const navigation=document.createElement('nav');navigation.id='rhq-director-nav';navigation.setAttribute('aria-label','Director tasks');
  const options=[
   ['waivers','Waivers & Releases','Review signed agreements, check waiver status, and manage annual releases.','Open waiver management'],
-  ['registrations','Registrations','Manage synchronized seasons, tournaments, offerings, and participant intake.','Open registration management'],
-  ['tools','Development Tools','Access previews, connected tests, and configuration used during development.','Open development tools']
+  ['registrations','Registrations','Manage synchronized seasons, tournaments, offerings, and participant intake.','Manage registrations']
  ];
  const buttons=[];
  for(const [key,title,description,action] of options){
@@ -1181,6 +1189,9 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
    navigation.append(button);buttons.push(button);
  }
  home.append(navigation);
+ const advanced=document.createElement('details');advanced.id='rhq-advanced-entry';
+ advanced.innerHTML='<summary>Testing & advanced tools</summary><p>Local registration previews and developer diagnostics—not a second registration management workspace.</p><button type="button" class="secondary" id="rhq-open-tools">Open testing utilities</button>';
+ home.append(advanced);
  anchor.before(home);
  const back=document.createElement('button');back.type='button';back.id='rhq-director-back';back.textContent='← Back to Director Home';
  anchor.before(back);
@@ -1189,7 +1200,9 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
  const info=document.createElement('p');info.textContent="League and tournament seasons load automatically when you are signed in.";
  const open=document.createElement('button');open.className='btn';open.type='button';open.textContent='Open registration management';
  const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');feedback.style.marginTop='10px';
- card.append(title,info,open,feedback);anchor.after(card);
+ card.append(title,info,feedback);anchor.after(card);
+ // Keep the historic launch button out of the UI: the registrations task opens directly.
+ open.hidden=true;card.append(open);
  // One shared sign-in for waivers and synchronized registration operations.
  const access=document.createElement('section');access.id='rhq-director-access';
  access.style.cssText='background:#f7f9fc;border:1px solid #dce3eb;border-radius:12px;padding:13px 15px;margin:14px 0';
@@ -1276,6 +1289,7 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
    window.scrollTo({top:0,behavior:'instant'});
  };
  buttons.forEach(b=>b.addEventListener('click',()=>setPane(b.dataset.section)));
+ home.querySelector('#rhq-open-tools').addEventListener('click',()=>setPane('tools'));
  back.addEventListener('click',()=>setPane('home'));
  // Keep the existing open button for continuity, but the main card now launches directly.
  open.addEventListener('click',()=>launchRegistration());
