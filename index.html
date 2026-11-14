@@ -29,7 +29,21 @@
 
 /* R1.6: one focused director area; infrequent configuration stays collapsed. */
 .uw-director-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}.uw-director-heading h2{margin:0;font-size:21px}.uw-director-heading p{margin:3px 0 0;font-size:13px;color:#607083}.uw-director-heading a{text-decoration:none;font-size:13px}.uw-director-actions{display:flex;gap:9px;flex-wrap:wrap;margin:17px 0}.uw-director-actions button{min-height:42px}#uw-ledger{display:grid;gap:8px;margin-top:10px}#uw-ledger .uw-ledger-row{padding:11px 13px;border:1px solid #dce3eb;border-radius:9px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}#uw-ledger time{color:#64748b;font-size:12px}#uw-ledger .uw-ledger-label{font-weight:650}.uw-admin-advanced{margin-top:17px;border-top:1px solid #dce3eb;padding-top:15px}.uw-admin-advanced summary{cursor:pointer;font-weight:700;color:#324b60}.uw-admin-advanced>label,.uw-admin-new>label{display:grid;gap:5px;margin-top:12px;font-size:13px;font-weight:650}.uw-admin-advanced :is(input,select,textarea){width:100%;border:1px solid #bdcbd8;border-radius:8px;padding:10px;font:inherit}.uw-admin-new{border:1px solid #dce3eb;border-radius:9px;margin:15px 0;padding:12px}.uw-admin-note{font-size:12px;color:#607083}#uw-director-status:empty{display:none}#uw-dir[hidden]{display:none!important}
-</style><style id="r244-restore-style">.approved-public-heading{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;width:100%;color:#172e47;padding:8px 0}.approved-public-heading span{font-size:12px;color:#617489}#live-catalog{max-width:100%}#approved-public-frame{max-width:100%}#connected-registration-tests summary:focus-visible{outline:2px solid #b58d49;outline-offset:4px}</style></head><body>
+</style><style id="r244-restore-style">.approved-public-heading{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;width:100%;color:#172e47;padding:8px 0}.approved-public-heading span{font-size:12px;color:#617489}#live-catalog{max-width:100%}#approved-public-frame{max-width:100%}#connected-registration-tests summary:focus-visible{outline:2px solid #b58d49;outline-offset:4px}</style><style id="rhq-director-clean-nav">
+/* Director Hub clarity pass — presentation only; existing RPCs and auth retained. */
+#rhq-director-nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 14px;align-items:center}
+#rhq-director-nav button{border:1px solid #d0dbe5;background:white;border-radius:10px;padding:11px 14px;color:#28435c;font-weight:700;cursor:pointer;min-height:43px}
+#rhq-director-nav button[aria-selected="true"]{background:#163451;color:white;border-color:#163451}
+#rhq-registration-entry{border:1px solid #d8e1ea;background:white;border-radius:14px;padding:21px;margin:0 0 14px}
+#rhq-registration-entry h2{margin:0 0 7px;font-size:21px}#rhq-registration-entry p{color:#5b6d80;margin:0 0 13px;font-size:14px}
+#rhq-registration-entry button{min-height:43px}
+body.rhq-director-pane-waivers main.shell > :is(.notice,#dev-director,.layout,.strip,#live-catalog,#module-frame,footer,#rhq-registration-entry){display:none!important}
+body.rhq-director-pane-registrations main.shell > :is(.notice,#uw-dir,#dev-director,.layout,.strip,#live-catalog,footer){display:none!important}
+body.rhq-director-pane-registrations:not(.rhq-registration-open) #module-frame{display:none!important}
+body.rhq-director-pane-tools main.shell > :is(#uw-dir,#rhq-registration-entry){display:none!important}
+body.uw-standalone #rhq-director-nav,body.uw-standalone #rhq-registration-entry{display:none!important}
+@media(max-width:640px){#rhq-director-nav button{flex:1 1 auto}#rhq-registration-entry{padding:15px}}
+</style></head><body>
 <header class="top" id="rhq-site-header"><div><div class="eyebrow">SOVEREIGN SPORTS</div><h1>Registration HQ</h1><p>Director workspace · Registration features in development</p></div><div class="pill">REGISTRATION DEVELOPMENT</div></header>
 <script id="rhq-public-route-branding">
 // Public waiver is operational; other Registration HQ modules remain under development.
@@ -1149,4 +1163,48 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
 }
 })();
 </script>
-</body></html>
+<script id="rhq-director-clean-nav-script">
+// Director presentation navigation. No authentication, data, or RPC changes.
+(()=>{
+ if(new URLSearchParams(location.search).has('waiver'))return;
+ const shell=document.querySelector('main.shell');
+ const anchor=document.querySelector('#uw-dir');
+ if(!shell||!anchor)return;
+ const navigation=document.createElement('nav');navigation.id='rhq-director-nav';navigation.setAttribute('aria-label','Registration HQ director sections');
+ const options=[['waivers','Waivers & Releases'],['registrations','Registrations'],['tools','Development Tools']];
+ const buttons=[];
+ for(const [key,title] of options){
+   const button=document.createElement('button');button.type='button';button.textContent=title;
+   button.dataset.section=key;button.setAttribute('aria-selected','false');
+   navigation.append(button);buttons.push(button);
+ }
+ anchor.before(navigation);
+ const card=document.createElement('section');card.id='rhq-registration-entry';
+ const title=document.createElement('h2');title.textContent='Registrations';
+ const info=document.createElement('p');info.textContent='Manage league and tournament registration settings using the existing authorized director workspace.';
+ const open=document.createElement('button');open.className='btn';open.type='button';open.textContent='Open registration management';
+ const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');feedback.style.marginTop='10px';
+ card.append(title,info,open,feedback);anchor.after(card);
+ const allowed=new Set(options.map(x=>x[0]));
+ const setPane=key=>{
+   if(!allowed.has(key))key='waivers';
+   document.body.classList.remove('rhq-director-pane-waivers','rhq-director-pane-registrations','rhq-director-pane-tools');
+   document.body.classList.add('rhq-director-pane-'+key);
+   buttons.forEach(b=>b.setAttribute('aria-selected',String(b.dataset.section===key)));
+   try{sessionStorage.setItem('rhq-director-pane-v1',key)}catch{}
+ };
+ buttons.forEach(b=>b.addEventListener('click',()=>setPane(b.dataset.section)));
+ open.addEventListener('click',()=>{
+   const restore=document.getElementById('dev-restore-connected');
+   const frame=document.getElementById('module-frame');
+   if(!restore||!frame){feedback.textContent='Connected director workspace is unavailable.';return;}
+   document.body.classList.add('rhq-registration-open');
+   restore.click();
+   frame.style.display='block';
+   feedback.textContent='Connected registration management opened below. Sign in there only if your director session has expired.';
+   frame.scrollIntoView({block:'start',behavior:'smooth'});
+ });
+ let previous='waivers';try{previous=sessionStorage.getItem('rhq-director-pane-v1')||'waivers'}catch{}
+ setPane(previous);
+})();
+</script></body></html>
