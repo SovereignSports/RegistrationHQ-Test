@@ -16,7 +16,7 @@
 // REUSED from the existing Registration HQ R1.12 director build; publishable key only.
 const SETTINGS={url:'https://vwbfaithoprvvvnwpzmq.supabase.co',publishableKey:'sb_publishable_M0dI7drOVEZaIXyc67R_3A_Cse-on7i',storageKey:'rhq-shared-auth-v1',
   // Only connect verified app destinations. These may be updated without changing auth.
-  apps:{registration:'https://sovereignsports.github.io/Registration-HQ/',league:'',tournament:''}};
+  apps:{registration:'https://sovereignsports.github.io/Registration-HQ-Test/',league:'',tournament:''}};
 let client;const el=id=>document.getElementById(id),show=id=>{for(const v of ['loading','login','hub'])el(v).hidden=v!==id};
 function notice(msg,error=false){const box=el('login-message');box.hidden=false;box.textContent=msg;box.className='alert'+(error?' error':'');}
 function configureApps(){for(const name of ['registration','league','tournament']){const target=SETTINGS.apps[name],btn=el(name);btn.disabled=!target;if(target)btn.onclick=()=>{const u=new URL(target);if(u.protocol!=='https:')return;window.location.assign(u.href)};else if(el(name+'-state'))el(name+'-state').textContent='App connection pending';}}
