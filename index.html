@@ -334,7 +334,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function mount(doc){
  const root=doc.getElementById('private-registry-body');if(!root||root.dataset.ready)return;
  root.dataset.ready='1';root.className='';
- root.innerHTML=`<div class="grid2"><label class="field">Public Supabase publishable/anon key<input id="priv-key" type="password" autocomplete="off" placeholder="sb_publishable_… (never a service key)"></label><label class="field">Director email<input id="priv-email" type="email" autocomplete="email" placeholder="Authorized email"></label></div><div class="row" style="justify-content:flex-start;margin-top:12px"><button class="btn" id="priv-signin">Send sign-in code</button><button class="btn ghost" id="priv-load">Load private sources</button><button class="btn ghost" id="priv-out">Sign out</button></div><div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:10px"><label class="field" style="flex:1;min-width:160px">Email verification code<input id="priv-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Code from email"></label><button class="btn ghost" id="priv-verify-otp" type="button">Verify code</button></div><p class="meta">Already signed in? Just select Load private sources. Email code verification keeps you on this page.</p><p id="priv-status" role="status" class="muted small"></p><div id="priv-cards" class="event-list"></div>`;
+ root.innerHTML=`<div class="row" style="justify-content:flex-start;align-items:center;margin:4px 0 12px"><strong>Synced seasons and events</strong><button class="btn ghost" type="button" id="priv-load">Refresh</button></div><p id="priv-status" role="status" class="muted small">Checking your director session…</p><div id="priv-cards" class="event-list"></div>`;
  const st=root.querySelector('#priv-status'),cards=root.querySelector('#priv-cards');
  function message(v){statusText=v;st.textContent=v;}
 
@@ -509,40 +509,9 @@ function mount(doc){
  }}
  message(statusText);draw();
  function connection(){
-   const field=root.querySelector('#priv-key');
-   const key=(field.value||window.RHQ_AUTH.publicKey()).trim();
-   if(!field.value&&key)field.value=key;
-   client=window.RHQ_AUTH.client(key);
+   client=window.RHQ_AUTH.client(window.RHQ_AUTH.publicKey());
    return client;
  }
- root.querySelector('#priv-key').value=window.RHQ_AUTH.publicKey();
- root.querySelector('#priv-signin').onclick=async()=>{
-   if(busy)return;busy=true;
-   try{
-     const email=root.querySelector('#priv-email').value.trim();
-     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw Error('Enter a valid email address.');
-     const sb=connection(), current=await sb.auth.getUser();
-     if(current.data?.user?.email?.toLowerCase()===email.toLowerCase()){
-       message('Already signed in as '+email+'. Select Load private sources.');return;
-     }
-     const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
-     if(error)throw error;
-     message('Check your email for a one-time code, enter it below and select Verify code. If the email has only a link, follow it once; we can also enable codes in the Supabase email template.');
-   }catch(e){message(e.message||'Unable to request sign-in');}finally{busy=false;}
- };
- root.querySelector('#priv-verify-otp').onclick=async()=>{
-   if(busy)return;busy=true;
-   try{
-     const email=root.querySelector('#priv-email').value.trim(),token=root.querySelector('#priv-otp').value.trim();
-     if(!email||!/^[0-9]{6,8}$/.test(token))throw Error('Enter the numeric email verification code.');
-     const {data,error}=await connection().auth.verifyOtp({email,token,type:'email'});
-     if(error)throw error;
-     if(!data?.user)throw Error('Verification did not establish a session.');
-     root.querySelector('#priv-otp').value='';
-     message('Signed in as '+(data.user.email||email)+'. Loading authorized sources…');
-     busy=false;root.querySelector('#priv-load').click();
-   }catch(e){message(e.message||'Email code could not be verified');}finally{busy=false;}
- };
  root.querySelector('#priv-load').onclick=async()=>{if(busy)return;busy=true;records=null;planner.hidden=true;planner.replaceChildren();draw();message('Checking director authorization…');try{const sb=connection(),{data:user,error:authError}=await sb.auth.getUser();if(authError||!user?.user)throw Error('Sign in with your authorized RHQ director account first.');const {data,error}=await sb.rpc('rhq_r22_my_private_sources_v1');if(error)throw Error('Director source access denied: '+error.message);if(data?.read_only!==true||!Array.isArray(data.items)||data.items.length>100||!data.items.every(x=>['league_hq','tournament_hq'].includes(x.source_system)&&uuid.test(x.source_event_id)&&typeof x.source_title==='string'))throw Error('Unrecognized private source response.');const identities=new Set();for(const item of data.items){const k=item.source_system+'|'+item.source_event_id;if(identities.has(k))throw Error('Duplicate source identity');identities.add(k);}records=data.items;draw();message(records.length+' private sources loaded. Checking saved configurations and league labels…');
    // Optional, server-verified parent labels: the browser never connects to League HQ or holds its secret key.
    try {
@@ -550,7 +519,7 @@ function mount(doc){
      const accessToken=sessionResult?.session?.access_token;
      if(sessionError||!accessToken)throw Error('Director session unavailable for label lookup');
      const response=await fetch(PROJECT+'/functions/v1/rhq-league-labels-r22',{
-       method:'POST',headers:{'content-type':'application/json','apikey':root.querySelector('#priv-key').value.trim(),'authorization':'Bearer '+accessToken},
+       method:'POST',headers:{'content-type':'application/json','apikey':window.RHQ_AUTH.publicKey(),'authorization':'Bearer '+accessToken},
        body:JSON.stringify({action:'league_labels'}),signal:AbortSignal.timeout(12000)
      });
      if(!response.ok)throw Error('League labels not yet available (HTTP '+response.status+')');
@@ -580,7 +549,17 @@ function mount(doc){
      root.querySelectorAll('#priv-cards button').forEach(button=>{button.disabled=true;button.title='Saved-offering verification unavailable';});
    }
    }catch(e){records=null;offerings=[];draw();message(e.message||'Unable to load sources');}finally{busy=false;}};
- root.querySelector('#priv-out').onclick=async()=>{try{await client?.auth.signOut();}catch{}records=null;offerings=[];planState.clear();selectedSource=null;planner.hidden=true;planner.replaceChildren();draw();message('Signed out. Private source records and local plans cleared.');};
+ // Shared Director Hub owns sign-out and session management.
+ // When re-opening the synchronized sources, reuse its existing session.
+ const autoLoad=async()=>{
+   try{
+     const {data,error}=await connection().auth.getSession();
+     if(error)throw error;
+     if(data?.session?.access_token){root.querySelector('#priv-load').click();}
+     else message('Sign in once using Director Access above, then reopen Registrations.');
+   }catch(err){message('Director session unavailable. Use Director Access to sign in.');}
+ };
+ Promise.resolve().then(autoLoad);
 }
 window.RHQ_LIVE={mount};
 const frame=document.getElementById('module-frame');frame.addEventListener('load',()=>{try{if(document.querySelector('[data-tab="director"].selected'))mount(frame.contentDocument);}catch(e){}});
@@ -1181,10 +1160,51 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
  anchor.before(navigation);
  const card=document.createElement('section');card.id='rhq-registration-entry';
  const title=document.createElement('h2');title.textContent='Registrations';
- const info=document.createElement('p');info.textContent='Manage league and tournament registration settings using the existing authorized director workspace.';
+ const info=document.createElement('p');info.textContent="League and tournament seasons load automatically when you are signed in.";
  const open=document.createElement('button');open.className='btn';open.type='button';open.textContent='Open registration management';
  const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');feedback.style.marginTop='10px';
  card.append(title,info,open,feedback);anchor.after(card);
+ // One shared sign-in for waivers and synchronized registration operations.
+ const access=document.createElement('section');access.id='rhq-director-access';
+ access.style.cssText='background:#f7f9fc;border:1px solid #dce3eb;border-radius:12px;padding:13px 15px;margin:14px 0';
+ access.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong>Director access</strong><span id="rhq-access-state" role="status" style="font-size:13px;color:#53677b">Checking sign-in…</span></div><div id="rhq-access-login" hidden style="margin-top:10px"><label style="display:block;font-size:13px;margin-bottom:8px">Director email <input type="email" id="rhq-access-email" autocomplete="email" placeholder="Your authorized email" style="width:100%;max-width:360px;padding:10px;border:1px solid #bdcbd8;border-radius:8px;display:block;margin-top:4px"></label><button type="button" id="rhq-access-link" class="btn">Email me a sign-in link</button><p style="font-size:12px;color:#53677b;margin:9px 0 0">You'll only need a link when your saved session has expired. Director permissions are still checked by Supabase.</p></div><button type="button" id="rhq-access-out" class="secondary" style="margin-top:8px;display:none">Sign out</button>`;
+ navigation.after(access);
+ const authClient=()=>window.RHQ_AUTH.client(window.RHQ_AUTH.publicKey());
+ let authChecking=false;
+ async function refreshDirectorAccess(){
+   if(authChecking)return;authChecking=true;
+   const state=access.querySelector('#rhq-access-state');
+   try{
+     const {data,error}=await authClient().auth.getUser();
+     if(error)throw error;
+     const user=data?.user;
+     state.textContent=user?'Signed in: '+(user.email||'Authorized account'):'Not signed in';
+     access.querySelector('#rhq-access-login').hidden=!!user;
+     access.querySelector('#rhq-access-out').style.display=user?'inline-block':'none';
+   }catch(_){state.textContent='Sign in to manage private records';access.querySelector('#rhq-access-login').hidden=false;access.querySelector('#rhq-access-out').style.display='none';}
+   finally{authChecking=false;}
+ }
+ access.querySelector('#rhq-access-link').addEventListener('click',async()=>{
+   const email=access.querySelector('#rhq-access-email').value.trim();
+   const state=access.querySelector('#rhq-access-state');
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){state.textContent='Enter a valid director email.';return;}
+   const button=access.querySelector('#rhq-access-link');button.disabled=true;
+   try{
+     const {error}=await authClient().auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+     if(error)throw error;
+     state.textContent='Check your email for the sign-in link. Return here after opening it.';
+   }catch(error){state.textContent=error.message||'Could not send sign-in link.';}
+   finally{button.disabled=false;}
+ });
+ access.querySelector('#rhq-access-out').addEventListener('click',async()=>{
+   try{await authClient().auth.signOut();}catch(_){}
+   const frame=document.getElementById('module-frame');
+   if(frame)frame.style.display='none';
+   document.body.classList.remove('rhq-registration-open');
+   await refreshDirectorAccess();
+ });
+ try{authClient().auth.onAuthStateChange(()=>{setTimeout(refreshDirectorAccess,0);});}catch(_){}
+ refreshDirectorAccess();
  const allowed=new Set(options.map(x=>x[0]));
  const setPane=key=>{
    if(!allowed.has(key))key='waivers';
@@ -1201,7 +1221,7 @@ if(new URLSearchParams(location.search).get('waiver')==='thank-you'){
    document.body.classList.add('rhq-registration-open');
    restore.click();
    frame.style.display='block';
-   feedback.textContent='Connected registration management opened below. Sign in there only if your director session has expired.';
+   feedback.textContent='Synchronized sources will load from your existing director session.';
    frame.scrollIntoView({block:'start',behavior:'smooth'});
  });
  let previous='waivers';try{previous=sessionStorage.getItem('rhq-director-pane-v1')||'waivers'}catch{}
