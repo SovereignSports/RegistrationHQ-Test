@@ -11,7 +11,6 @@
 <button class="app" id="league" type="button" disabled><span class="symbol" aria-hidden="true">♟</span><b>League HQ</b><small>Manage seasons, schedules, teams, standings and championship nights.</small><span class="open" id="league-state">App connection pending</span></button>
 <button class="app" id="tournament" type="button" disabled><span class="symbol" aria-hidden="true">🏆</span><b>Tournament HQ</b><small>Manage events, pools, brackets, officials and live tournament operations.</small><span class="open" id="tournament-state">App connection pending</span></button>
 </div><div id="hub-message" class="statusline" role="status" aria-live="polite"></div><p style="margin-top:20px">Each HQ remains its own application. Access permissions are checked by the server, not by these launcher buttons.</p></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script defer>
 'use strict';
 // REUSED from the existing Registration HQ R1.12 director build; publishable key only.
@@ -27,7 +26,23 @@ async function verifiedDirector(){const {data:{user},error:userError}=await clie
   if(error||!data||data.read_only!==true||!Array.isArray(data.items))throw Error('This account could not be verified as an authorized Registration HQ director.');
   return user;}
 async function updateView(){try{const user=await verifiedDirector();if(user){el('identity').textContent='Signed in as '+(user.email||'director');show('hub');configureApps();el('hub-message').textContent='Director session active. Select a headquarters.';}else show('login');}catch(err){show('login');notice(err.message||'Director authorization was not confirmed.',true);}}
-async function boot(){try{if(!window.supabase?.createClient)throw Error('Unable to load Supabase authentication. Check your connection.');client=window.supabase.createClient(SETTINGS.url,SETTINGS.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:SETTINGS.storageKey}});await updateView();}catch(err){show('login');notice(err.message||'Could not initialize director sign-in.',true);}}
+async function loadSupabase(){
+ if(window.supabase?.createClient)return;
+ const sources=['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2','https://unpkg.com/@supabase/supabase-js@2'];
+ for(const src of sources){
+   try{
+     await new Promise((resolve,reject)=>{
+       const script=document.createElement('script');script.src=src;script.async=true;
+       script.onload=()=>window.supabase?.createClient?resolve():reject(new Error('Supabase global was not initialized'));
+       script.onerror=()=>reject(new Error('Could not fetch '+new URL(src).hostname));
+       document.head.appendChild(script);
+     });
+     if(window.supabase?.createClient)return;
+   }catch(err){console.warn('Director Hub auth library load attempt failed:',err.message);}
+ }
+ throw Error('Supabase library could not load from either CDN. Check Safari content blockers or network access to jsdelivr.net and unpkg.com.');
+}
+async function boot(){try{await loadSupabase();client=window.supabase.createClient(SETTINGS.url,SETTINGS.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:SETTINGS.storageKey}});await updateView();}catch(err){show('login');notice(err.message||'Could not initialize director sign-in.',true);}}
 el('login-form').addEventListener('submit',async e=>{e.preventDefault();if(!client){notice('Authentication is unavailable. Reload and try again.',true);return;}const btn=el('submit');btn.disabled=true;el('login-message').hidden=true;try{const email=el('email').value.trim(),password=el('password').value;const {error}=await client.auth.signInWithPassword({email,password});el('password').value='';if(error)throw error;await updateView();}catch(err){notice(err.message||'Unable to sign in.',true)}finally{btn.disabled=false}});
 el('signout').addEventListener('click',async()=>{try{if(client)await client.auth.signOut();show('login');el('password').value='';el('login-message').hidden=true;}catch(_){el('hub-message').textContent='Unable to sign out. Try again.'}});
 boot();
