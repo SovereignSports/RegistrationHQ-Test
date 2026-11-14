@@ -885,7 +885,7 @@ window.addEventListener('load',handleReturn);
 </script><style>
 #universal-workspace{background:#fff;border:1px solid #dce3eb;border-radius:14px;padding:20px;margin:14px 0}#universal-workspace .uw-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#universal-workspace label{display:grid;gap:5px;font-size:13px;font-weight:650}#universal-workspace input,#universal-workspace select{border:1px solid #bdcbd8;border-radius:8px;padding:10px;width:100%}#universal-workspace .uw-check{display:flex;align-items:flex-start;gap:8px;font-weight:400}#universal-workspace .uw-check input{width:auto;margin-top:3px}#uw-document{border:1px solid #d5dee7;background:#f7f9fb;padding:16px;border-radius:9px;max-height:440px;overflow:auto;font-size:14px}#uw-text{white-space:pre-wrap}#uw-venue-section{border-top:1px solid #cbd5e1;margin-top:14px;padding-top:8px}#uw-thank-you[hidden]{display:none!important}body.uw-confirmed #uw-signing,body.uw-confirmed #uw-status,body.uw-confirmed #uw-heading{display:none!important}#uw-status,#uw-director-status{white-space:pre-wrap;padding:11px;background:#eef3f8;border-radius:8px;font-size:13px}#uw-sign[disabled]{opacity:.5}body.uw-standalone .shell>*:not(#universal-workspace){display:none!important}body.uw-standalone footer{display:none!important}body.uw-standalone .shell{max-width:710px}body:not(.uw-standalone) #universal-workspace{display:none!important}body.uw-standalone #uw-dir{display:none!important}#uw-dir{margin-bottom:14px}#uw-dir select{width:100%;padding:10px;border:1px solid #bdcbd8;border-radius:8px}#uw-dir button{min-height:42px}@media(max-width:620px){#universal-workspace .uw-fields{grid-template-columns:1fr}#universal-workspace{padding:14px}}
 
-#uw-early-match[hidden]{display:none!important}.uw-early-match{padding:14px;border:1px solid #c6d8e1;background:#f1f7fa;border-radius:10px;margin:14px 0}.uw-early-match p{margin:0 0 10px}.uw-early-match .uw-actions{margin-top:0;padding-top:0;border:0;justify-content:flex-start;flex-wrap:wrap}
+#universal-workspace .uw-fields > #uw-early-match{grid-column:1 / -1;margin:2px 0 10px}\n#uw-early-match[hidden]{display:none!important}.uw-early-match{padding:14px;border:1px solid #c6d8e1;background:#f1f7fa;border-radius:10px;margin:14px 0}.uw-early-match p{margin:0 0 10px}.uw-early-match .uw-actions{margin-top:0;padding-top:0;border:0;justify-content:flex-start;flex-wrap:wrap}
 /* R1.5 — universal waiver: the approved one-card-at-a-time participant experience */
 #universal-workspace .uw-card{background:white;min-height:260px;padding:8px 0 4px}#universal-workspace .uw-card[hidden]{display:none!important}
 .uw-kicker{text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:.13em;color:#96713a}.uw-card h3{font-size:23px;line-height:1.25;margin:8px 0}.uw-subtitle{color:#607083;margin:0 0 20px;font-size:14px}
@@ -917,6 +917,7 @@ function uwIsMinor(){const age=uwAge();return age!==null&&age<18;}
 function uwRefreshRole(){
  const age=uwAge(),minor=uwIsMinor();
  e('uw-guardian-fields').hidden=!minor;
+ uwPositionEarlyNotice();
  e('uw-age-note').textContent=age===null?'':(minor?'A parent or legal guardian must complete and sign for this participant.':'The adult participant signs their own agreement.');
  e('uw-accept-text').textContent=minor?'I have read Part B and authorize the minor’s participation. I understand this consent does not waive the minor’s claims.':'I have read Part A and agree to its terms, including the release of liability.';
  e('uw-signer-label').textContent=minor?'Type the parent/guardian full legal name as the electronic signature':'Type your full legal name as your electronic signature';
@@ -989,11 +990,26 @@ function uwEarlyReady(){
  const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
  return uwIsMinor()?e('uw-guardian-name').value.trim().length>=2&&validEmail(e('uw-guardian-email').value):validEmail(e('uw-email').value);
 }
+// Keep the result beside the fields that complete the lookup: participant
+// contact email for adults, guardian contact email for minors.
+function uwPositionEarlyNotice(){
+ const notice=e('uw-early-match');
+ const anchor=e(uwIsMinor()?'uw-guardian-email':'uw-email').closest('label');
+ if(anchor&&anchor.parentNode)anchor.insertAdjacentElement('afterend',notice);
+}
 function uwHideEarlyNotice(){e('uw-early-match').hidden=true;}
 function uwForward(){uwHideEarlyNotice();uwShowStep(uwStep+1);document.getElementById('uw-heading').scrollIntoView({block:'start',behavior:'smooth'});}
 function uwShowEarlyNotice(key){
  if(key!==uwEarlyKey()||uwStep!==0)return;
+ uwPositionEarlyNotice();
  const notice=e('uw-early-match');notice.hidden=false;
+ // A matching response may arrive after the signer has scrolled; make sure
+ // the newly shown choice is actually visible without forcing a page change.
+ requestAnimationFrame(()=>{
+  const bounds=notice.getBoundingClientRect();
+  if(bounds.bottom>window.innerHeight-20||bounds.top<0)
+   notice.scrollIntoView({block:'nearest',behavior:'smooth'});
+ });
  notice.querySelector('[data-uw-matched]').textContent='A current waiver may already be on file for these details. You can finish here, or continue if you need a new signature.';
  notice.querySelector('[data-uw-stop]').onclick=()=>{const url=new URL(location.href);url.searchParams.set('waiver','thank-you');url.searchParams.set('result','already-on-file');location.assign(url.toString());};
  notice.querySelector('[data-uw-continue]').onclick=()=>{uwEarlyCheckBypassKey=key;uwForward();};
