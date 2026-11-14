@@ -936,7 +936,7 @@ function uwRenderAgreement(){
 }
 e('uw-dob').addEventListener('change',uwRefreshRole);
 e('uw-dob').addEventListener('input',uwRefreshRole);
-for(const input of document.querySelectorAll('#universal-workspace .uw-card[data-uw-step="0"] input,#universal-workspace .uw-card[data-uw-step="0"] select'))input.addEventListener('input',()=>{const note=e('uw-early-match');if(note)note.hidden=true;});
+// Card-one inputs are connected to the automatic duplicate precheck below.
 
 function uwShowStep(n){
  uwStep=n;
@@ -979,38 +979,87 @@ function uwValidateStep(n){
  return '';
 }
 function uwError(message){e('uw-card-error').textContent=message;e('uw-card-error').hidden=false;}
-// Early check only; the transactional signing function still decides duplicates.
-let uwEarlyCheckBusy=false,uwEarlyCheckBypassKey='';
+// A privacy-limited hint, not identity proof. The final transaction guard is authoritative.
+// Do not query a name alone: require DOB and the same contact/signer fields used by the server.
+let uwEarlyCheckBusy=false,uwEarlyCheckBypassKey='',uwEarlyTimer=null;
+const uwCheckedKeys=new Map();
 function uwEarlyKey(){return [e('uw-name').value.trim().toLowerCase().replace(/\s+/g,' '),e('uw-dob').value,e('uw-email').value.trim().toLowerCase(),uwIsMinor()?'guardian':'adult',uwIsMinor()?e('uw-guardian-name').value.trim().toLowerCase().replace(/\s+/g,' '):'',uwIsMinor()?e('uw-guardian-email').value.trim().toLowerCase():'',packet?.waiver_version_id||''].join('|');}
-function uwHideEarlyNotice(){const note=e('uw-early-match');if(note)note.hidden=true;}
+function uwEarlyReady(){
+ if(!packet||uwAge()===null||e('uw-name').value.trim().length<2)return false;
+ const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+ return uwIsMinor()?e('uw-guardian-name').value.trim().length>=2&&validEmail(e('uw-guardian-email').value):validEmail(e('uw-email').value);
+}
+function uwHideEarlyNotice(){e('uw-early-match').hidden=true;}
 function uwForward(){uwHideEarlyNotice();uwShowStep(uwStep+1);document.getElementById('uw-heading').scrollIntoView({block:'start',behavior:'smooth'});}
+function uwShowEarlyNotice(key){
+ if(key!==uwEarlyKey()||uwStep!==0)return;
+ const notice=e('uw-early-match');notice.hidden=false;
+ notice.querySelector('[data-uw-matched]').textContent='A current waiver may already be on file for these details. You can finish here, or continue if you need a new signature.';
+ notice.querySelector('[data-uw-stop]').onclick=()=>{const url=new URL(location.href);url.searchParams.set('waiver','thank-you');url.searchParams.set('result','already-on-file');location.assign(url.toString());};
+ notice.querySelector('[data-uw-continue]').onclick=()=>{uwEarlyCheckBypassKey=key;uwForward();};
+}
+// One network call per complete set of identifying inputs, including if Continue is pressed.
+// An in-flight check is shared rather than duplicated; stale results never display.
+let uwEarlyPromise=null,uwEarlyPromiseKey='';
+async function uwCheckEarly(){
+ if(!uwEarlyReady())return null;
+ const key=uwEarlyKey();
+ if(key===uwEarlyCheckBypassKey)return {possible_match:false,bypassed:true};
+ if(uwCheckedKeys.has(key)){
+  const cached=uwCheckedKeys.get(key);
+  if(cached?.possible_match)uwShowEarlyNotice(key);
+  return cached;
+ }
+ if(uwEarlyPromise&&uwEarlyPromiseKey===key)return uwEarlyPromise;
+ if(uwEarlyCheckBusy)return null;
+ uwEarlyCheckBusy=true;uwEarlyPromiseKey=key;
+ uwEarlyPromise=(async()=>{
+  try{
+   const result=await rpc('rhq_universal_early_duplicate_v1',{
+    p_waiver_version_id:packet.waiver_version_id,p_waiver_fingerprint:packet.content_sha256,
+    p_name:e('uw-name').value.trim(),p_date_of_birth:e('uw-dob').value,
+    p_email:e('uw-email').value.trim(),p_guardian_name:uwIsMinor()?e('uw-guardian-name').value.trim():null,
+    p_guardian_email:uwIsMinor()?e('uw-guardian-email').value.trim():null
+   });
+   // Do not cache rate-limited or failed queries as a successful clearance.
+   if(result&&!result.check_limited)uwCheckedKeys.set(key,result);
+   if(result?.possible_match===true)uwShowEarlyNotice(key);
+   return result;
+  }catch(error){
+   console.warn('Optional waiver precheck unavailable',error.message);
+   return null; // Final signing guard still checks duplicates.
+  }finally{uwEarlyCheckBusy=false;uwEarlyPromise=null;uwEarlyPromiseKey='';}
+ })();
+ return uwEarlyPromise;
+}
+function uwScheduleEarlyCheck(){
+ clearTimeout(uwEarlyTimer);
+ uwHideEarlyNotice();
+ if(uwStep!==0||!uwEarlyReady())return;
+ const key=uwEarlyKey();
+ if(key===uwEarlyCheckBypassKey)return;
+ if(uwCheckedKeys.has(key)){if(uwCheckedKeys.get(key)?.possible_match)uwShowEarlyNotice(key);return;}
+ uwEarlyTimer=setTimeout(()=>{void uwCheckEarly();},700);
+}
+for(const field of document.querySelectorAll('#universal-workspace .uw-card[data-uw-step="0"] input,#universal-workspace .uw-card[data-uw-step="0"] select')){
+ field.addEventListener('input',uwScheduleEarlyCheck);
+ field.addEventListener('change',uwScheduleEarlyCheck);
+}
 e('uw-next').onclick=async()=>{
  const err=uwValidateStep(uwStep);if(err){uwError(err);return;}
  if(uwStep!==0||!packet){uwForward();return;}
- const key=uwEarlyKey();if(key===uwEarlyCheckBypassKey){uwForward();return;}
- if(uwEarlyCheckBusy)return;
- uwEarlyCheckBusy=true;e('uw-next').disabled=true;
+ clearTimeout(uwEarlyTimer);
+ const key=uwEarlyKey();
+ if(key===uwEarlyCheckBypassKey){uwForward();return;}
+ if(uwEarlyCheckBusy&&uwEarlyPromiseKey!==key){ // A previous value is being checked; don't block the new input.
+  uwForward();return;
+ }
+ const btn=e('uw-next');btn.disabled=true;
  try{
-  const data=await rpc('rhq_universal_early_duplicate_v1',{
-   p_waiver_version_id:packet.waiver_version_id,p_waiver_fingerprint:packet.content_sha256,
-   p_name:e('uw-name').value.trim(),p_date_of_birth:e('uw-dob').value,
-   p_email:e('uw-email').value.trim(),p_guardian_name:uwIsMinor()?e('uw-guardian-name').value.trim():null,
-   p_guardian_email:uwIsMinor()?e('uw-guardian-email').value.trim():null
-  });
-  if(data?.possible_match===true){
-   const notice=e('uw-early-match');notice.hidden=false;
-   notice.querySelector('[data-uw-matched]').textContent='A current waiver may already be on file for these details. You can finish here, or continue if you need a new signature.';
-   notice.scrollIntoView({block:'nearest',behavior:'smooth'});
-   notice.querySelector('[data-uw-stop]').onclick=()=>{const url=new URL(location.href);url.searchParams.set('waiver','thank-you');url.searchParams.set('result','already-on-file');location.assign(url.toString());};
-   notice.querySelector('[data-uw-continue]').onclick=()=>{uwEarlyCheckBypassKey=key;uwForward();};
-   return;
-  }
- }catch(error){
-  // Do not block a legitimate signature if the optional early check is unavailable.
-  // The final signing function still checks duplicate signatures atomically.
-  console.warn('Optional waiver precheck unavailable',error.message);
- }finally{uwEarlyCheckBusy=false;e('uw-next').disabled=false;}
- uwForward();
+  const result=await uwCheckEarly();
+  if(result?.possible_match===true){uwShowEarlyNotice(key);return;}
+  uwForward();
+ }finally{btn.disabled=false;}
 };
 e('uw-back').onclick=()=>{uwShowStep(Math.max(0,uwStep-1));document.getElementById('uw-heading').scrollIntoView({block:'start',behavior:'smooth'});};
 uwShowStep(0);
@@ -1024,6 +1073,7 @@ async function load(){
   const p=await rpc('rhq_universal_public_packet_v1');
   if(!p.active){say('The universal waiver is not currently available for signing.');return;}
   packet=p;
+  uwCheckedKeys.clear();uwEarlyCheckBypassKey='';
   e('uw-title').textContent=p.title;
   uwRenderAgreement();
   e('uw-venues').textContent=(p.covered_venues||[]).join(' • ');
