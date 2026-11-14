@@ -91,6 +91,7 @@
     <label class="uw-check"><input id="uw-electronic" type="checkbox">I agree to sign electronically and intend my typed name to serve as my signature.</label>
     <label class="uw-signature-label"><span id="uw-signer-label">Type your full legal name as your signature</span><input id="uw-signature" maxlength="120" autocomplete="off"></label>
   </section>
+  <div id="uw-early-match" class="uw-early-match" role="status" aria-live="polite" hidden><p data-uw-matched></p><div class="uw-actions"><button type="button" class="btn" data-uw-stop>Finish</button><button type="button" class="secondary" data-uw-continue>Continue anyway</button></div></div>
   <div id="uw-card-error" role="alert" aria-live="polite" hidden></div>
   <div class="uw-actions"><button id="uw-back" type="button" class="secondary" hidden>Back</button><button id="uw-next" type="button" class="btn">Continue</button><button id="uw-sign" type="button" class="btn" hidden>Submit waiver</button></div>
 </div>
@@ -884,6 +885,7 @@ window.addEventListener('load',handleReturn);
 </script><style>
 #universal-workspace{background:#fff;border:1px solid #dce3eb;border-radius:14px;padding:20px;margin:14px 0}#universal-workspace .uw-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#universal-workspace label{display:grid;gap:5px;font-size:13px;font-weight:650}#universal-workspace input,#universal-workspace select{border:1px solid #bdcbd8;border-radius:8px;padding:10px;width:100%}#universal-workspace .uw-check{display:flex;align-items:flex-start;gap:8px;font-weight:400}#universal-workspace .uw-check input{width:auto;margin-top:3px}#uw-document{border:1px solid #d5dee7;background:#f7f9fb;padding:16px;border-radius:9px;max-height:440px;overflow:auto;font-size:14px}#uw-text{white-space:pre-wrap}#uw-venue-section{border-top:1px solid #cbd5e1;margin-top:14px;padding-top:8px}#uw-thank-you[hidden]{display:none!important}body.uw-confirmed #uw-signing,body.uw-confirmed #uw-status,body.uw-confirmed #uw-heading{display:none!important}#uw-status,#uw-director-status{white-space:pre-wrap;padding:11px;background:#eef3f8;border-radius:8px;font-size:13px}#uw-sign[disabled]{opacity:.5}body.uw-standalone .shell>*:not(#universal-workspace){display:none!important}body.uw-standalone footer{display:none!important}body.uw-standalone .shell{max-width:710px}body:not(.uw-standalone) #universal-workspace{display:none!important}body.uw-standalone #uw-dir{display:none!important}#uw-dir{margin-bottom:14px}#uw-dir select{width:100%;padding:10px;border:1px solid #bdcbd8;border-radius:8px}#uw-dir button{min-height:42px}@media(max-width:620px){#universal-workspace .uw-fields{grid-template-columns:1fr}#universal-workspace{padding:14px}}
 
+#uw-early-match[hidden]{display:none!important}.uw-early-match{padding:14px;border:1px solid #c6d8e1;background:#f1f7fa;border-radius:10px;margin:14px 0}.uw-early-match p{margin:0 0 10px}.uw-early-match .uw-actions{margin-top:0;padding-top:0;border:0;justify-content:flex-start;flex-wrap:wrap}
 /* R1.5 — universal waiver: the approved one-card-at-a-time participant experience */
 #universal-workspace .uw-card{background:white;min-height:260px;padding:8px 0 4px}#universal-workspace .uw-card[hidden]{display:none!important}
 .uw-kicker{text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:.13em;color:#96713a}.uw-card h3{font-size:23px;line-height:1.25;margin:8px 0}.uw-subtitle{color:#607083;margin:0 0 20px;font-size:14px}
@@ -934,6 +936,7 @@ function uwRenderAgreement(){
 }
 e('uw-dob').addEventListener('change',uwRefreshRole);
 e('uw-dob').addEventListener('input',uwRefreshRole);
+for(const input of document.querySelectorAll('#universal-workspace .uw-card[data-uw-step="0"] input,#universal-workspace .uw-card[data-uw-step="0"] select'))input.addEventListener('input',()=>{const note=e('uw-early-match');if(note)note.hidden=true;});
 
 function uwShowStep(n){
  uwStep=n;
@@ -976,7 +979,39 @@ function uwValidateStep(n){
  return '';
 }
 function uwError(message){e('uw-card-error').textContent=message;e('uw-card-error').hidden=false;}
-e('uw-next').onclick=()=>{const err=uwValidateStep(uwStep);if(err){uwError(err);return;}uwShowStep(uwStep+1);document.getElementById('uw-heading').scrollIntoView({block:'start',behavior:'smooth'});};
+// Early check only; the transactional signing function still decides duplicates.
+let uwEarlyCheckBusy=false,uwEarlyCheckBypassKey='';
+function uwEarlyKey(){return [e('uw-name').value.trim().toLowerCase().replace(/\s+/g,' '),e('uw-dob').value,e('uw-email').value.trim().toLowerCase(),uwIsMinor()?'guardian':'adult',uwIsMinor()?e('uw-guardian-name').value.trim().toLowerCase().replace(/\s+/g,' '):'',uwIsMinor()?e('uw-guardian-email').value.trim().toLowerCase():'',packet?.waiver_version_id||''].join('|');}
+function uwHideEarlyNotice(){const note=e('uw-early-match');if(note)note.hidden=true;}
+function uwForward(){uwHideEarlyNotice();uwShowStep(uwStep+1);document.getElementById('uw-heading').scrollIntoView({block:'start',behavior:'smooth'});}
+e('uw-next').onclick=async()=>{
+ const err=uwValidateStep(uwStep);if(err){uwError(err);return;}
+ if(uwStep!==0||!packet){uwForward();return;}
+ const key=uwEarlyKey();if(key===uwEarlyCheckBypassKey){uwForward();return;}
+ if(uwEarlyCheckBusy)return;
+ uwEarlyCheckBusy=true;e('uw-next').disabled=true;
+ try{
+  const data=await rpc('rhq_universal_early_duplicate_v1',{
+   p_waiver_version_id:packet.waiver_version_id,p_waiver_fingerprint:packet.content_sha256,
+   p_name:e('uw-name').value.trim(),p_date_of_birth:e('uw-dob').value,
+   p_email:e('uw-email').value.trim(),p_guardian_name:uwIsMinor()?e('uw-guardian-name').value.trim():null,
+   p_guardian_email:uwIsMinor()?e('uw-guardian-email').value.trim():null
+  });
+  if(data?.possible_match===true){
+   const notice=e('uw-early-match');notice.hidden=false;
+   notice.querySelector('[data-uw-matched]').textContent='A current waiver may already be on file for these details. You can finish here, or continue if you need a new signature.';
+   notice.scrollIntoView({block:'nearest',behavior:'smooth'});
+   notice.querySelector('[data-uw-stop]').onclick=()=>{const url=new URL(location.href);url.searchParams.set('waiver','thank-you');url.searchParams.set('result','already-on-file');location.assign(url.toString());};
+   notice.querySelector('[data-uw-continue]').onclick=()=>{uwEarlyCheckBypassKey=key;uwForward();};
+   return;
+  }
+ }catch(error){
+  // Do not block a legitimate signature if the optional early check is unavailable.
+  // The final signing function still checks duplicate signatures atomically.
+  console.warn('Optional waiver precheck unavailable',error.message);
+ }finally{uwEarlyCheckBusy=false;e('uw-next').disabled=false;}
+ uwForward();
+};
 e('uw-back').onclick=()=>{uwShowStep(Math.max(0,uwStep-1));document.getElementById('uw-heading').scrollIntoView({block:'start',behavior:'smooth'});};
 uwShowStep(0);
 const client=()=>window.RHQ_AUTH.client(window.RHQ_AUTH.publicKey());
